@@ -1,0 +1,18 @@
+{
+  "name": "serverboy",
+  "version": "0.0.1",
+  "description": "A gameboy emulator based off of gameboy-online and optimized to run on a server with hooks for scripting and streaming output.",
+  "main": "src/interface.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/interface.js"
+  },
+  "keywords": [
+    "gameboy",
+    "emulator",
+    "scripting",
+    "pure javascript"
+  ],
+  "author": "Daniel Shumway <shumway.danny@gmail.com> (http://www.latinforimagination.com/)",
+  "license": "MIT"
+}

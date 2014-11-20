@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<script src="socket.io.js"></script>
+<script>
+	window.onload = function() {
+		var canvas = document.getElementById('mainCanvas');
+		var ctx = canvas.getContext('2d');
+		var ctx_data = ctx.createImageData(160, 144);
+
+		console.log('about to connect');
+		var socket = io.connect('127.0.0.1:3333'); //Server address goes here.
+		socket.on('connect', function() {
+			console.log('connected');
+		});
+		socket.on('frame', function(data) {
+			for (var i=0; i < data.length; i++){
+                ctx_data.data[i] = data[i];
+            }
+
+            ctx.putImageData(ctx_data, 0, 0);
+		});
+
+		window.onkeydown = function(e) {
+			var keys = {
+				"37":"left",
+				"39":"right",
+				"38":"up",
+				"40":"down",
+				"90":"a",
+				"88":"b",
+				"13":"start",
+				"32":"select"
+			};
+
+			if(keys[e.keyCode] != undefined) {
+				socket.emit('keydown', { key: keys[e.keyCode] });
+			} else {
+				if(e.keyCode === 27) {
+					socket.emit('restart', {});
+				}
+			}
+		}
+
+		window.onkeyup = function(e) {
+			var keys = {
+				"37":"left",
+				"39":"right",
+				"38":"up",
+				"40":"down",
+				"90":"a",
+				"88":"b",
+				"13":"start",
+				"32":"select"
+			}
+			if(keys[e.keyCode]) {
+				socket.emit('keyup', { key: keys[e.keyCode] });
+			}
+		}
+	}
+</script>
+</head>
+
+<body>
+	<div>Uses socketIO to stream from a remote server.</div>
+	<canvas id="mainCanvas" width="160" height="144"></canvas>
+</body>
+</html>
