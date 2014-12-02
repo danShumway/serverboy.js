@@ -50,13 +50,11 @@ function loadROM(file_path) {
 	};
 
 	//Handle doing a single frame.
-	var frames = 0;
+	var frames = 0; var lastFrame = undefined; var currentFrame = undefined;
 	var emulatorLoop = function() {
 
 		gameboy_instance.pressKeys(keysToPress);
 		currentScreen = gameboy_instance.doFrame();
-
-
 		frames++;
 		if(frames%10 === 0) { //Output every 10th frame.
 			if(io) {
@@ -74,6 +72,6 @@ function loadROM(file_path) {
 
 
 console.log('starting to load rom');
-loadROM("ROM/mario.gb");
+loadROM("../ROM/mario.gb");
 
 
