@@ -20,14 +20,14 @@ function Interface() {
 	//Checks to see if the gameboy object has been created.
 	var initialized = function() {
 		return (typeof gameboy == "object" && gameboy != null);
-	}
+	};
 
 	//Checks to see if the emulator is "running", not whether or not it's playing/paused.
 	//Think of it like priming a gas tank before you start moving your car.  I guess.  Maybe.
 	//I honestly don't know if true means it's running or stopped.
 	var running = function() {
 		return ((gameboy.stopEmulator & 2) == 0);
-	}
+	};
 
 	//presses or releases a key 
 	//takes a value from 1-8 and a boolean for pressed (true) or released (false)
@@ -37,7 +37,7 @@ function Interface() {
 				gameboy.JoyPadEvent(keycode, down);
 			}
 		}
-	}
+	};
 
 	//stops whatever was going on.
 	var clearLastEmulation = function() {
@@ -51,7 +51,7 @@ function Interface() {
 			//Nothing existed to be cleared.
 		}
 
-	}
+	};
 
 	//---------------------------------------------------------
 	//------------PUBLIC METHODS-------------------------------
@@ -83,7 +83,7 @@ function Interface() {
 
 	//Emulates 1 frame.
 	//Returns an array with the imageData from that frame, which can be later converted into a canvas writeable format (see documentation).
-	this.doFrame = function() {
+	this.doFrame = function(partial) {
 
 		//Press the required keys.
 		for (var i = 0; i < keys.length; i++) {
@@ -112,20 +112,27 @@ function Interface() {
 			}
 		}*/
 
-		return gameboy.currentScreen;
-	}
+		if(partial) {
+			return gameboy.partialScreen;
+		} else {
+			return gameboy.currentScreen;
+		}
+	};
 
 	//send an array with each key you want pressed.
 	//This array should be filled with strings.
 	//You can't undo a press.  Once you press a key it stays pressed until the end of the frame.
 	this.pressKeys = function(_keys){
+        var key;
 		for (key in _keys) {
-			var num = keymap.indexOf(_keys[key]);
-			if(keys.indexOf(num) === -1) { //Only add keys that haven't already been added.
-				keys.push(num);
-			}
+            if(_keys.hasOwnProperty(key)) {
+                var num = keymap.indexOf(_keys[key]);
+                if (keys.indexOf(num) === -1) { //Only add keys that haven't already been added.
+                    keys.push(num);
+                }
+            }
 		}
-	}
+	};
 
 	//Same as above, but with just one key.
 	this.pressKey = function(_key){
@@ -133,7 +140,7 @@ function Interface() {
 		if(keys.indexOf(num) === -1) { //Only add keys that haven't already been added.
 			keys.push(num);
 		}
-	}
+	};
 
 	//Returns an array with 
 	this.getKeys = function() {
@@ -141,7 +148,7 @@ function Interface() {
 		for (var i = 0; i < keymap.length; i++) {
 			toReturn.push()
 		}
-	}
+	};
 
 	//Gets a block of memory.  You can specify a start and a stop number if you wish.
 	this.getMemory = function(start, end) {
@@ -153,12 +160,23 @@ function Interface() {
 		}
 
 		return currentFrame;
-	}
+	};
 
-	//-----------------------------------------------------------
+
+    /**
+     * ToDo: Fill out this method and figure out proper encapsulation.  What can you modify and what can't you?
+     * @returns the gameboy's current screen.
+     */
+    this.getScreen = function() {
+        return gameboy.frameBuffer;
+    };
+
+    //-----------------------------------------------------------
 	//----------TODO:----------------------------------------------
 	//- Migrate over saving and loading in a more node-friendly format, possibly using fileIO
 	//- Add sound streaming support.
+
+
 
 }
 

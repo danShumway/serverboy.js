@@ -507,10 +507,10 @@ GameBoyCore.prototype.interpretCartridge = function () {
 
 
     console.log("Game Title: " + this.name + "[" + this.gameCode + "][" + this.ROMImage[0x143] + "]");
-    console.log("Game Code: " + this.gameCode);
+    //console.log("Game Code: " + this.gameCode);
     // Cartridge type
     this.cartridgeType = this.ROM[0x147];
-    console.log("Cartridge type #" + this.cartridgeType);
+    //console.log("Cartridge type #" + this.cartridgeType);
     //Map out ROM cartridge sub-types.
     var MBCType = "";
     switch (this.cartridgeType) {
@@ -723,7 +723,7 @@ GameBoyCore.prototype.interpretCartridge = function () {
         cout("New style license code: " + cNewLicense, 0);
     }
     this.ROMImage = ""; //Memory consumption reduction.
-}
+};
 GameBoyCore.prototype.disableBootROM = function () {
     //Remove any traces of the boot ROM from ROM memory.
     for (var index = 0; index < 0x100; ++index) {
@@ -745,7 +745,7 @@ GameBoyCore.prototype.disableBootROM = function () {
     else {
         this.recompileBootIOWriteHandling();
     }
-}
+};
 GameBoyCore.prototype.initializeTiming = function () {
     //Emulator Timing:
     this.clocksPerSecond = this.emulatorSpeed * 0x400000;
@@ -753,14 +753,14 @@ GameBoyCore.prototype.initializeTiming = function () {
     this.CPUCyclesTotalRoundoff = this.baseCPUCyclesPerIteration % 4;
     this.CPUCyclesTotalBase = this.CPUCyclesTotal = (this.baseCPUCyclesPerIteration - this.CPUCyclesTotalRoundoff) | 0;
     this.CPUCyclesTotalCurrent = 0;
-}
+};
 GameBoyCore.prototype.setSpeed = function (speed) {
     this.emulatorSpeed = speed;
     this.initializeTiming();
     if (this.audioHandle) {
         this.initSound();
     }
-}
+};
 GameBoyCore.prototype.setupRAM = function () {
     //Setup the auxilliary/switchable RAM:
     if (this.cMBC2) {
@@ -799,10 +799,10 @@ GameBoyCore.prototype.setupRAM = function () {
     }
     this.memoryReadJumpCompile();
     this.memoryWriteJumpCompile();
-}
+};
 GameBoyCore.prototype.MBCRAMUtilized = function () {
     return this.cMBC1 || this.cMBC2 || this.cMBC3 || this.cMBC5 || this.cMBC7 || this.cRUMBLE;
-}
+};
 GameBoyCore.prototype.recomputeDimension = function () {
     //Cache some dimension info:
     this.onscreenWidth = 160;
@@ -811,7 +811,7 @@ GameBoyCore.prototype.recomputeDimension = function () {
     this.offscreenWidth = 160;
     this.offscreenHeight = 144;
     this.offscreenRGBCount = this.offscreenWidth * this.offscreenHeight * 4;
-}
+};
 GameBoyCore.prototype.initLCD = function () {
     this.recomputeDimension();
     if (this.offscreenRGBCount != 92160) {
@@ -838,7 +838,7 @@ GameBoyCore.prototype.initLCD = function () {
         this.drawContextOnscreen.mozImageSmoothingEnabled = settings[13];
         //Get a CanvasPixelArray buffer:*/
 
-        console.log('starting up canvas hack');
+        //console.log('starting up canvas hack');
         try {
 
 
@@ -881,23 +881,31 @@ GameBoyCore.prototype.initLCD = function () {
     /*catch (error) {
         throw(new Error("HTML5 Canvas support required: " + error.message + "file: " + error.fileName + ", line: " + error.lineNumber));
     }*/
-}
-GameBoyCore.prototype.graphicsBlit = function () {
-    //var c = this.drawContextOnscreen.createImageData(160, 144);
-    this.currentScreen = [];
-    for (var i=0; i < this.canvasBuffer.data.length; i++){
-        this.currentScreen[i] = this.canvasBuffer.data[i];
-        //c.data[i] = this.canvasBuffer.data[i];
-    }
-    /*if (this.offscreenWidth == this.onscreenWidth && this.offscreenHeight == this.onscreenHeight) {
+};
 
-        this.drawContextOnscreen.putImageData(c, 0, 0);
-    }
-    else {
-        this.drawContextOffscreen.putImageData(c, 0, 0);
-        this.drawContextOnscreen.drawImage(this.canvasOffscreen, 0, 0, this.onscreenWidth, this.onscreenHeight);
-    }*/
-}
+//I think I'm just copying out framebuffer.  So maybe I dont' need to do anything?
+GameBoyCore.prototype.graphicsBlit = function () {
+
+    //var c = this.drawContextOnscreen.createImageData(160, 144);
+    //if(!this.currentScreenFixed) { this.currentScreenFixed = []; }
+    //this.lastScreen = this.currentScreenFixed;
+    //this.currentScreen = [];//new Uint8Array(this.canvasBuffer.data.length);
+    //this.partialScreen = [];
+    //for (var i=0; i < this./*canvasBuffer.data.*/frameBuffer.length; i++){
+    //    //Build partial frame.
+    //    if(this.lastScreen[i] != this.frameBuffer/*canvasBuffer.data*/[i]) {
+    //        this.partialScreen.push(i);
+    //        this.partialScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
+    //    }
+    //
+    //    //Build full frame.
+    //    this.currentScreenFixed[i] = this.frameBuffer/*canvasBuffer.data*/[i];
+    //    this.currentScreen.push(i);
+    //    this.currentScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
+
+        //c.data[i] = this.canvasBuffer.data[i];
+    //}
+};
 GameBoyCore.prototype.JoyPadEvent = function (key, down) {
     if (down) {
         this.JoyPad &= 0xFF ^ (1 << key);
@@ -1780,7 +1788,7 @@ GameBoyCore.prototype.updateSpriteCount = function (line) {
             }
         }
     }
-}
+};
 GameBoyCore.prototype.matchLYC = function () {  //LYC Register Compare
     if (this.memory[0xFF44] == this.memory[0xFF45]) {
         this.memory[0xFF41] |= 0x04;
@@ -1792,7 +1800,7 @@ GameBoyCore.prototype.matchLYC = function () {  //LYC Register Compare
     else {
         this.memory[0xFF41] &= 0x7B;
     }
-}
+};
 GameBoyCore.prototype.updateCore = function () {
     //Update the clocking for the LCD emulation:
     this.LCDTicks += this.CPUTicks >> this.doubleSpeedShifter;  //LCD Timing
@@ -1828,7 +1836,7 @@ GameBoyCore.prototype.updateCore = function () {
             this.memory[0xFF01] = ((this.memory[0xFF01] << 1) & 0xFE) | 0x01;   //We could shift in actual link data here if we were to implement such!!!
         }
     }
-}
+};
 GameBoyCore.prototype.updateCoreFull = function () {
     //Update the state machine:
     this.updateCore();
@@ -1836,7 +1844,7 @@ GameBoyCore.prototype.updateCoreFull = function () {
     if (this.emulatorTicks >= this.CPUCyclesTotal) {
         this.iterationEndRoutine();
     }
-}
+};
 GameBoyCore.prototype.initializeLCDController = function () {
     //Display on hanlding:
     var line = 0;
@@ -2010,7 +2018,7 @@ GameBoyCore.prototype.initializeLCDController = function () {
         }
         ++line;
     }
-}
+};
 GameBoyCore.prototype.DisplayShowOff = function () {
     if (this.drewBlank == 0) {
         //Output a blank screen to the output framebuffer:
@@ -2018,7 +2026,7 @@ GameBoyCore.prototype.DisplayShowOff = function () {
         this.drewFrame = true;
     }
     this.drewBlank = 2;
-}
+};
 GameBoyCore.prototype.executeHDMA = function () {
     this.DMAWrite(1);
     if (this.halt) {
@@ -2038,7 +2046,7 @@ GameBoyCore.prototype.executeHDMA = function () {
     else {
         --this.memory[0xFF55];
     }
-}
+};
 GameBoyCore.prototype.clockUpdate = function () {
     if (this.cTIMER) {
         var dateObj = new Date();
@@ -2055,7 +2063,7 @@ GameBoyCore.prototype.clockUpdate = function () {
                     this.RTCMinutes -= 60;
                     ++this.RTCHours;
                     if (this.RTCHours >= 24) {
-                        this.RTCHours -= 24
+                        this.RTCHours -= 24;
                         ++this.RTCDays;
                         if (this.RTCDays >= 512) {
                             this.RTCDays -= 512;
@@ -2088,8 +2096,11 @@ GameBoyCore.prototype.dispatchDraw = function () {
         }
     }
 }
+
+//ToDo: Remove this method, I don't think it's necessary.
+//Converts rgb canvas into rgba.
 GameBoyCore.prototype.processDraw = function (frameBuffer) {
-    var canvasRGBALength = this.offscreenRGBCount;
+    /*var canvasRGBALength = this.offscreenRGBCount;
     var canvasData = this.canvasBuffer.data;
     var bufferIndex = 0;
     for (var canvasIndex = 0; canvasIndex < canvasRGBALength; ++canvasIndex) {
@@ -2098,19 +2109,22 @@ GameBoyCore.prototype.processDraw = function (frameBuffer) {
         canvasData[canvasIndex++] = frameBuffer[bufferIndex++];
     }
     this.graphicsBlit();
-    this.drewFrame = false;
-}
+    this.drewFrame = false;*/
+};
+
+//Which means I want to grab the swizzledFrame, not the normal frameBuffer(?)
+//ToDo: I believe (but am not sure) that I can remove this too.
 GameBoyCore.prototype.swizzleFrameBuffer = function () {
     //Convert our dirty 24-bit (24-bit, with internal render flags above it) framebuffer to an 8-bit buffer with separate indices for the RGB channels:
-    var frameBuffer = this.frameBuffer;
+    /*var frameBuffer = this.frameBuffer;
     var swizzledFrame = this.swizzledFrame;
     var bufferIndex = 0;
     for (var canvasIndex = 0; canvasIndex < 69120;) {
         swizzledFrame[canvasIndex++] = (frameBuffer[bufferIndex] >> 16) & 0xFF;     //Red
         swizzledFrame[canvasIndex++] = (frameBuffer[bufferIndex] >> 8) & 0xFF;      //Green
         swizzledFrame[canvasIndex++] = frameBuffer[bufferIndex++] & 0xFF;           //Blue
-    }
-}
+    }*/
+};
 GameBoyCore.prototype.clearFrameBuffer = function () {
     var bufferIndex = 0;
     var frameBuffer = this.swizzledFrame;
@@ -2126,14 +2140,14 @@ GameBoyCore.prototype.clearFrameBuffer = function () {
             frameBuffer[bufferIndex++] = 222;
         }
     }
-}
+};
 GameBoyCore.prototype.resizeFrameBuffer = function () {
     //Resize in javascript with resize.js:
     if (this.resizePathClear) {
         this.resizePathClear = false;
         this.resizer.resize(this.swizzledFrame);
     }
-}
+};
 GameBoyCore.prototype.compileResizeFrameBufferFunction = function () {
     if (this.offscreenRGBCount > 0) {
         var parentObj = this;
@@ -2144,7 +2158,7 @@ GameBoyCore.prototype.compileResizeFrameBufferFunction = function () {
             parentObj.resizePathClear = true;
         });
     }
-}
+};
 GameBoyCore.prototype.renderScanLine = function (scanlineToRender) {
     this.pixelStart = scanlineToRender * 160;
     if (this.bgEnabled) {
@@ -2162,7 +2176,7 @@ GameBoyCore.prototype.renderScanLine = function (scanlineToRender) {
     this.SpriteLayerRender(scanlineToRender);
     this.currentX = 0;
     this.midScanlineOffset = -1;
-}
+};
 GameBoyCore.prototype.renderMidScanLine = function () {
     if (this.actualScanLine < 144 && this.modeSTAT == 3) {
         //TODO: Get this accurate:
@@ -2188,7 +2202,7 @@ GameBoyCore.prototype.renderMidScanLine = function () {
             this.currentX = this.pixelEnd;
         }
     }
-}
+};
 GameBoyCore.prototype.initializeModeSpecificArrays = function () {
     this.LCDCONTROL = (this.LCDisOn) ? this.LINECONTROL : this.DISPLAYOFFCONTROL;
     if (this.cGBC) {
@@ -2210,7 +2224,7 @@ GameBoyCore.prototype.initializeModeSpecificArrays = function () {
         this.OAMAddressCache = this.getTypedArray(10, 0, "int32");
     }
     this.renderPathBuild();
-}
+};
 GameBoyCore.prototype.GBCtoGBModeAdjust = function () {
     cout("Stepping down from GBC mode.", 0);
     this.VRAM = this.GBCMemory = this.BGCHRCurrentBank = this.BGCHRBank2 = null;
@@ -2236,7 +2250,7 @@ GameBoyCore.prototype.GBCtoGBModeAdjust = function () {
     this.renderPathBuild();
     this.memoryReadJumpCompile();
     this.memoryWriteJumpCompile();
-}
+};
 GameBoyCore.prototype.renderPathBuild = function () {
     if (!this.cGBC) {
         this.BGLayerRender = this.BGGBLayerRender;
@@ -2247,7 +2261,7 @@ GameBoyCore.prototype.renderPathBuild = function () {
         this.priorityFlaggingPathRebuild();
         this.SpriteLayerRender = this.SpriteGBCLayerRender;
     }
-}
+};
 GameBoyCore.prototype.priorityFlaggingPathRebuild = function () {
     if (this.BGPriorityEnabled) {
         this.BGLayerRender = this.BGGBCLayerRender;
@@ -2257,7 +2271,7 @@ GameBoyCore.prototype.priorityFlaggingPathRebuild = function () {
         this.BGLayerRender = this.BGGBCLayerRenderNoPriorityFlagging;
         this.WindowLayerRender = this.WindowGBCLayerRenderNoPriorityFlagging;
     }
-}
+};
 GameBoyCore.prototype.initializeReferencesFromSaveState = function () {
     this.LCDCONTROL = (this.LCDisOn) ? this.LINECONTROL : this.DISPLAYOFFCONTROL;
     var tileIndex = 0;

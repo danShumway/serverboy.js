@@ -3,6 +3,8 @@ function Instance(ROMImage) {
 	//My added variables--------------
 	this.frameDone = false;
 	this.currentScreen = []; //this.currentScreenContents;
+	this.lastScreen = []; //A copy of the last frame's screen.
+	this.partialScreen = {}; //An object with the differences from the last screen.
 
 
 	//Params, etc...
