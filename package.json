@@ -1,6 +1,6 @@
 {
   "name": "serverboy",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A gameboy emulator based off of gameboy-online and optimized to run on a server with hooks for scripting and streaming output.",
   "main": "src/interface.js",
   "scripts": {

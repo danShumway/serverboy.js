@@ -9,8 +9,22 @@ function Interface() {
 	var gameboy; //The core emulator.
 
 	//Used internally to keep track of what keys are pressed on this frame.
-	var keymap = ["right", "left", "up", "down", "a", "b", "select", "start"];
-	var keys = []; var lastKeys = [];
+	var keymap = {
+		right : 0,
+		left : 1,
+		up : 2,
+		down : 3,
+		a : 4,
+		b : 5,
+		select : 6,
+		start : 7
+	};
+
+	var down = [];
+	Object.keys(keymap).forEach(function(key) {
+		down[key] = false;
+	});
+
 	var frames = 0; //How many frames have run?
 
 	//---------------------------------------------------------
@@ -29,7 +43,7 @@ function Interface() {
 		return ((gameboy.stopEmulator & 2) == 0);
 	};
 
-	//presses or releases a key 
+	//presses or releases a key
 	//takes a value from 1-8 and a boolean for pressed (true) or released (false)
 	var sendKey = function(keycode, down) {
 		if(initialized() && running()) {
@@ -46,7 +60,7 @@ function Interface() {
 
 			//Reset some internal variables.
 			frames = 0;
-			keys = []; lastKeys = [];
+
 		} else {
 			//Nothing existed to be cleared.
 		}
@@ -57,7 +71,6 @@ function Interface() {
 	//------------PUBLIC METHODS-------------------------------
 
 	this.loadROM = function(ROM) {
-
 
 		clearLastEmulation();
 		//autoSave(); //If we are about to load a new game, then save the last one.
@@ -70,7 +83,6 @@ function Interface() {
 		if(initialized()) {
 			if (!running()) {
 				gameboy.stopEmulator &= 1;
-				console.log("Starting the iterator.");
 				//var dateObj = new Date();
 				//gameboy.firstIteration = dateObj.getTime(); Hopefully will remove these very soon, or replace them with something else.
 				gameboy.iterations = 0;
@@ -86,13 +98,11 @@ function Interface() {
 	this.doFrame = function(partial) {
 
 		//Press the required keys.
-		for (var i = 0; i < keys.length; i++) {
-			sendKey(keys[i], true);
+		for (var i = 0; i < down.length; i++) {
+			if (down[i]) {
+				sendKey(i, true);
+			}
 		}
-
-		//Move over any keys that were pressed.
-		lastKeys = keys;
-		keys = [];
 
 		gameboy.frameDone = false;
 		while(!gameboy.frameDone) {
@@ -100,17 +110,12 @@ function Interface() {
 		}
 
 		//Release all the keys.
-		for (var i = 0; i < lastKeys.length; i++) {
-			sendKey(lastKeys[i], false);
+		for (var i = 0; i < down.length; i++) {
+			down[i] = false;
+			sendKey(i, false);
 		}
 
-		frames++; 
-
-		/*for(var i = 0; i < gameboy.currentScreen.length; i++) {
-			if(gameboy.currentScreen[i] !== 248 && gameboy.currentScreen[i] !== 0 && gameboy.currentScreen[i] !== 255){
-				console.log('found a difference: ' + gameboy.currentScreen[i]);
-			}
-		}*/
+		frames++;
 
 		if(partial) {
 			return gameboy.partialScreen;
@@ -126,23 +131,21 @@ function Interface() {
         var key;
 		for (key in _keys) {
             if(_keys.hasOwnProperty(key)) {
-                var num = keymap.indexOf(_keys[key]);
-                if (keys.indexOf(num) === -1) { //Only add keys that haven't already been added.
-                    keys.push(num);
-                }
+                this.pressKey(_keys[key]);
             }
 		}
 	};
 
 	//Same as above, but with just one key.
 	this.pressKey = function(_key){
-		var num = keymap.indexOf(_key);
-		if(keys.indexOf(num) === -1) { //Only add keys that haven't already been added.
-			keys.push(num);
+		var num = keymap[_key];
+		if (num != null) {
+			down[num] = true;
 		}
 	};
 
-	//Returns an array with 
+	//Returns an array with  all the keys.
+	//TODO: this can just return the object, frozen.
 	this.getKeys = function() {
 		toReturn = [];
 		for (var i = 0; i < keymap.length; i++) {
@@ -171,7 +174,6 @@ function Interface() {
         return gameboy.frameBuffer;
     };
 
-    //-----------------------------------------------------------
 	//----------TODO:----------------------------------------------
 	//- Migrate over saving and loading in a more node-friendly format, possibly using fileIO
 	//- Add sound streaming support.
