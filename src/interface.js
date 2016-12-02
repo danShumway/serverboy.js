@@ -16,15 +16,12 @@ const KEYMAP = {
 const PRIVATE = '_' + process.hrtime().join('.');
 function Interface() {
     let _that = this[PRIVATE] = {
-        __proto__ = Interface._prototype,
-
+        __proto__ : Interface._prototype,
         gameboy : null, //Core emulator
         frames : 0, //Number of elapsed frames
         pressed : new Array(Object.keys(KEYMAP).length), //Which keys are currently being held down
-    }
-    _that[PRIVATE] = that;
-
-
+    };
+    _that[PRIVATE] = _that;
 }
 
 Interface._prototype = {
@@ -180,7 +177,7 @@ Interface.prototype = {
     //    let _that = this[PRIVATE];
     //    return _that.gameboy.frameBuffer;
     // }
-}
+};
 
 Interface.KEYMAP = KEYMAP;
 module.exports = Interface;
