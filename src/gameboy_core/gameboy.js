@@ -40,7 +40,6 @@ GameboyCore.prototype = {
     TICKTable : require('./architecture/TICKTable.js'),
     SecondaryTICKTable : require('./argchitecture/SecondaryTICKTable.js'),
     //-------------------------------------------------------
-    //------------
 };
 
 GameBoyCore.prototype.saveSRAMState = function () {
@@ -102,20 +101,21 @@ GameBoyCore.prototype.returnFromRTCState = function () {
     }
 }
 GameBoyCore.prototype.start = function () {
-    this.initMemory();  //Write the startup memory.
+    { //Write the startup memory
+        //Initialize the RAM:
+        this.memory = this.getTypedArray(0x10000, 0, "uint8");
+        this.frameBuffer = this.getTypedArray(23040, 0xF8F8F8, "int32");
+        this.BGCHRBank1 = this.getTypedArray(0x800, 0, "uint8");
+        this.TICKTable = this.toTypedArray(this.TICKTable, "uint8");
+        this.SecondaryTICKTable = this.toTypedArray(this.SecondaryTICKTable, "uint8");
+        this.channel3PCM = this.getTypedArray(0x20, 0, "int8");
+    }
+
+
     this.ROMLoad();     //Load the ROM into memory and get cartridge information from it.
     this.initLCD();     //Initialize the graphics.
     //this.initSound(); //Sound object initialization. Optional.
     this.run();         //Start the emulation.
-}
-GameBoyCore.prototype.initMemory = function () {
-    //Initialize the RAM:
-    this.memory = this.getTypedArray(0x10000, 0, "uint8");
-    this.frameBuffer = this.getTypedArray(23040, 0xF8F8F8, "int32");
-    this.BGCHRBank1 = this.getTypedArray(0x800, 0, "uint8");
-    this.TICKTable = this.toTypedArray(this.TICKTable, "uint8");
-    this.SecondaryTICKTable = this.toTypedArray(this.SecondaryTICKTable, "uint8");
-    this.channel3PCM = this.getTypedArray(0x20, 0, "int8");
 }
 
 GameBoyCore.prototype.generateCacheArray = function (tileAmount) {
@@ -305,7 +305,12 @@ GameBoyCore.prototype.initBootstrap = function () {
 GameBoyCore.prototype.ROMLoad = function () {
   //Load the first two ROM banks (0x0000 - 0x7FFF) into regular gameboy memory:
   this.ROM = [];
-  this.usedBootROM = settings[1] && ((!settings[11] && this.GBCBOOTROM.length == 0x800) || (settings[11] && this.GBBOOTROM.length == 0x100));
+    this.usedBootROM = settings.sound && (
+
+        //Is ROM valid GBC or GB length?
+        (!settings.useGBRom && this.GBCBOOTROM.length == 0x800) || (settings.useGBRom && this.GBBOOTROM.length == 0x100)
+    );
+
   var maxLength = this.ROMImage.length;
   if (maxLength < 0x4000) {
     throw(new Error("ROM image size too small."));
@@ -313,7 +318,7 @@ GameBoyCore.prototype.ROMLoad = function () {
   this.ROM = this.getTypedArray(maxLength, 0, "uint8");
   var romIndex = 0;
   if (this.usedBootROM) {
-    if (!settings[11]) {
+    if (!settings.useGBRom) {
       //Patch in the GBC boot ROM into the memory map:
       if (this.ROMImageIsString) {
         for (; romIndex < 0x100; ++romIndex) {
@@ -454,7 +459,7 @@ GameBoyCore.prototype.interpretCartridge = function () {
     switch (this.cartridgeType) {
         case 0x00:
             //ROM w/o bank switching
-            if (!settings[9]) {
+            if (!settings.allowMBC1) {
                 MBCType = "ROM";
                 break;
             }
@@ -619,7 +624,7 @@ GameBoyCore.prototype.interpretCartridge = function () {
                 cout("Only GB mode detected.", 0);
                 break;
             case 0x32:  //Exception to the GBC identifying code:
-                if (!settings[2] && this.name + this.gameCode + this.ROM[0x143] == "Game and Watch 50") {
+                if (!settings.bootRom && this.name + this.gameCode + this.ROM[0x143] == "Game and Watch 50") {
                     this.cGBC = true;
                     cout("Created a boot exception for Game and Watch Gallery 2 (GBC ID byte is wrong on the cartridge).", 1);
                 }
@@ -628,7 +633,7 @@ GameBoyCore.prototype.interpretCartridge = function () {
                 }
                 break;
             case 0x80:  //Both GB + GBC modes
-                this.cGBC = !settings[2];
+                this.cGBC = !settings.bootRom;
                 cout("GB and GBC mode detected.", 0);
                 break;
             case 0xC0:  //Only GBC mode
@@ -687,7 +692,7 @@ GameBoyCore.prototype.disableBootROM = function () {
 GameBoyCore.prototype.initializeTiming = function () {
     //Emulator Timing:
     this.clocksPerSecond = this.emulatorSpeed * 0x400000;
-    this.baseCPUCyclesPerIteration = this.clocksPerSecond / 1000 * settings[6];
+    this.baseCPUCyclesPerIteration = this.clocksPerSecond / 1000 * setting.interval;
     this.CPUCyclesTotalRoundoff = this.baseCPUCyclesPerIteration % 4;
     this.CPUCyclesTotalBase = this.CPUCyclesTotal = (this.baseCPUCyclesPerIteration - this.CPUCyclesTotalRoundoff) | 0;
     this.CPUCyclesTotalCurrent = 0;
@@ -741,109 +746,39 @@ GameBoyCore.prototype.setupRAM = function () {
 GameBoyCore.prototype.MBCRAMUtilized = function () {
     return this.cMBC1 || this.cMBC2 || this.cMBC3 || this.cMBC5 || this.cMBC7 || this.cRUMBLE;
 };
-GameBoyCore.prototype.recomputeDimension = function () {
-    //Cache some dimension info:
-    this.onscreenWidth = 160;
-    this.onscreenHeight = 144;
+GameBoyCore.prototype.initLCD = function () {
 
+    //Cache some dimension info:
     this.offscreenWidth = 160;
     this.offscreenHeight = 144;
     this.offscreenRGBCount = this.offscreenWidth * this.offscreenHeight * 4;
-};
-GameBoyCore.prototype.initLCD = function () {
-    this.recomputeDimension();
-    if (this.offscreenRGBCount != 92160) {
-        //Only create the resizer handle if we need it:
-        this.compileResizeFrameBufferFunction();
+
+    //Resizer not needed:
+    this.resizer = null;
+
+    this.canvasBuffer = {
+        "data": new Uint8ClampedArray(92160),
+        "height": 144,
+        "width": 160
+    };
+
+    var index = this.offscreenRGBCount;
+
+    while (index > 0) {
+        this.canvasBuffer.data[index -= 4] = 0xF8;
+        this.canvasBuffer.data[index + 1] = 0xF8;
+        this.canvasBuffer.data[index + 2] = 0xF8;
+        this.canvasBuffer.data[index + 3] = 0xFF;
     }
-    else {
-        //Resizer not needed:
-        this.resizer = null;
+    if (this.swizzledFrame == null) {
+        this.swizzledFrame = this.getTypedArray(69120, 0xFF, "uint8");
     }
-    //try {
-        /*this.canvasOffscreen = document.createElement("canvas");
-        this.canvasOffscreen.width = this.offscreenWidth;
-        this.canvasOffscreen.height = this.offscreenHeight;
-        this.drawContextOffscreen = this.canvasOffscreen.getContext("2d");
-        this.drawContextOnscreen = this.canvas.getContext("2d");
-        this.canvas.setAttribute("style", (this.canvas.getAttribute("style") || "") + "; image-rendering: " + ((settings[13]) ? "auto" : "-webkit-optimize-contrast") + ";" +
-        "image-rendering: " + ((settings[13]) ? "optimizeQuality" : "-o-crisp-edges") + ";" +
-        "image-rendering: " + ((settings[13]) ? "optimizeQuality" : "-moz-crisp-edges") + ";" +
-        "-ms-interpolation-mode: " + ((settings[13]) ? "bicubic" : "nearest-neighbor") + ";");
-        this.drawContextOffscreen.webkitImageSmoothingEnabled  = settings[13];
-        this.drawContextOffscreen.mozImageSmoothingEnabled = settings[13];
-        this.drawContextOnscreen.webkitImageSmoothingEnabled  = settings[13];
-        this.drawContextOnscreen.mozImageSmoothingEnabled = settings[13];
-        //Get a CanvasPixelArray buffer:*/
 
-        //console.log('starting up canvas hack');
-        try {
-
-
-            this.canvasBuffer = {
-                "data": new Uint8ClampedArray(92160),
-                "height": 144,
-                "width": 160
-            }
-
-            //this.canvasBuffer = this.drawContextOffScreen.createImageData(144, 160);
-
-            //this.canvasBuffer.prototype = ImageData;
-
-
-            //new ImageData(160, 144);//{'width':160, 'height':144, 'data':new Array(160*144*4)};//this.drawContextOffscreen.createImageData(this.offscreenWidth, this.offscreenHeight);
-            console.log('trying to take canvas out of the picture.');
-        }
-        catch (error) {
-            console.log('hack failed: ' + error.message + ': falling back to getImageData initialization');
-            //cout("Falling back to the getImageData initialization (Error \"" + error.message + "\").", 1);
-            //this.canvasBuffer = this.drawContextOffscreen.getImageData(0, 0, this.offscreenWidth, this.offscreenHeight);
-        }
-        var index = this.offscreenRGBCount;
-        while (index > 0) {
-            this.canvasBuffer.data[index -= 4] = 0xF8;
-            this.canvasBuffer.data[index + 1] = 0xF8;
-            this.canvasBuffer.data[index + 2] = 0xF8;
-            this.canvasBuffer.data[index + 3] = 0xFF;
-        }
-        //this.graphicsBlit();
-        if (this.swizzledFrame == null) {
-            this.swizzledFrame = this.getTypedArray(69120, 0xFF, "uint8");
-        }
-
-        console.log('about to draw');
-        //Test the draw system and browser vblank latching:
-        this.drewFrame = true;                                      //Copy the latest graphics to buffer.
-        this.requestDraw();
-    //}
-    /*catch (error) {
-        throw(new Error("HTML5 Canvas support required: " + error.message + "file: " + error.fileName + ", line: " + error.lineNumber));
-    }*/
+    //Test the draw system and browser vblank latching:
+    this.drewFrame = true;                                      //Copy the latest graphics to buffer.
+    this.requestDraw();
 };
 
-//I think I'm just copying out framebuffer.  So maybe I dont' need to do anything?
-GameBoyCore.prototype.graphicsBlit = function () {
-
-    //var c = this.drawContextOnscreen.createImageData(160, 144);
-    //if(!this.currentScreenFixed) { this.currentScreenFixed = []; }
-    //this.lastScreen = this.currentScreenFixed;
-    //this.currentScreen = [];//new Uint8Array(this.canvasBuffer.data.length);
-    //this.partialScreen = [];
-    //for (var i=0; i < this./*canvasBuffer.data.*/frameBuffer.length; i++){
-    //    //Build partial frame.
-    //    if(this.lastScreen[i] != this.frameBuffer/*canvasBuffer.data*/[i]) {
-    //        this.partialScreen.push(i);
-    //        this.partialScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
-    //    }
-    //
-    //    //Build full frame.
-    //    this.currentScreenFixed[i] = this.frameBuffer/*canvasBuffer.data*/[i];
-    //    this.currentScreen.push(i);
-    //    this.currentScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
-
-        //c.data[i] = this.canvasBuffer.data[i];
-    //}
-};
 GameBoyCore.prototype.JoyPadEvent = function (key, down) {
     if (down) {
         this.JoyPad &= 0xFF ^ (1 << key);
@@ -872,9 +807,9 @@ GameBoyCore.prototype.GyroEvent = function (x, y) {
 GameBoyCore.prototype.initSound = function () {
     this.audioResamplerFirstPassFactor = Math.max(Math.min(Math.floor(this.clocksPerSecond / 44100), Math.floor(0xFFFF / 0x1E0)), 1);
     this.downSampleInputDivider = 1 / (this.audioResamplerFirstPassFactor * 0xF0);
-    if (settings[0]) {
-        this.audioHandle = new XAudioServer(2, this.clocksPerSecond / this.audioResamplerFirstPassFactor, 0, Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1, null, settings[3], function () {
-            settings[0] = false;
+    if (settings.sound) {
+        this.audioHandle = new XAudioServer(2, this.clocksPerSecond / this.audioResamplerFirstPassFactor, 0, Math.max(this.baseCPUCyclesPerIteration * settings.audioBufferMax / this.audioResamplerFirstPassFactor, 8192) << 1, null, settings.volumeLevel, function () {
+            settings.sound = false;
         });
         this.initAudioBuffer();
     }
@@ -884,15 +819,15 @@ GameBoyCore.prototype.initSound = function () {
     }
 }
 GameBoyCore.prototype.changeVolume = function () {
-    if (settings[0] && this.audioHandle) {
-        this.audioHandle.changeVolume(settings[3]);
+    if (settings.sound && this.audioHandle) {
+        this.audioHandle.changeVolume(settings.volumeLevel);
     }
 }
 GameBoyCore.prototype.initAudioBuffer = function () {
     this.audioIndex = 0;
     this.audioDestinationPosition = 0;
     this.downsampleInput = 0;
-    this.bufferContainAmount = Math.max(this.baseCPUCyclesPerIteration * settings[7] / this.audioResamplerFirstPassFactor, 4096) << 1;
+    this.bufferContainAmount = Math.max(this.baseCPUCyclesPerIteration * settings / this.audioResamplerFirstPassFactor, 4096) << 1;
     this.numSamplesTotal = (this.baseCPUCyclesPerIteration / this.audioResamplerFirstPassFactor) << 1;
     this.audioBuffer = this.getTypedArray(this.numSamplesTotal, 0, "float32");
 }
@@ -956,7 +891,7 @@ GameBoyCore.prototype.intializeWhiteNoise = function () {
     this.noiseSampleTable = this.LSFR15Table;
 }
 GameBoyCore.prototype.audioUnderrunAdjustment = function () {
-    if (settings[0]) {
+    if (settings.sound) {
         var underrunAmount = this.audioHandle.remainingBuffer();
         if (typeof underrunAmount == "number") {
             underrunAmount = this.bufferContainAmount - Math.max(underrunAmount, 0);
@@ -1111,7 +1046,7 @@ GameBoyCore.prototype.generateAudioFake = function (numSamples) {
 }
 GameBoyCore.prototype.audioJIT = function () {
     //Audio Sample Generation Timing:
-    if (settings[0]) {
+    if (settings.sound) {
         this.generateAudio(this.audioTicks);
     }
     else {
@@ -1386,7 +1321,7 @@ GameBoyCore.prototype.channel1OutputLevelSecondaryCache = function () {
     this.channel1OutputLevelTrimaryCache();
 }
 GameBoyCore.prototype.channel1OutputLevelTrimaryCache = function () {
-    if (this.channel1CachedDuty[this.channel1DutyTracker] && settings[14][0]) {
+    if (this.channel1CachedDuty[this.channel1DutyTracker] && settings.userChannels[0]) {
         this.channel1currentSampleLeftTrimary = this.channel1currentSampleLeftSecondary;
         this.channel1currentSampleRightTrimary = this.channel1currentSampleRightSecondary;
     }
@@ -1422,7 +1357,7 @@ GameBoyCore.prototype.channel2OutputLevelSecondaryCache = function () {
     this.channel2OutputLevelTrimaryCache();
 }
 GameBoyCore.prototype.channel2OutputLevelTrimaryCache = function () {
-    if (this.channel2CachedDuty[this.channel2DutyTracker] && settings[14][1]) {
+    if (this.channel2CachedDuty[this.channel2DutyTracker] && settings.userChannels[1]) {
         this.channel2currentSampleLeftTrimary = this.channel2currentSampleLeftSecondary;
         this.channel2currentSampleRightTrimary = this.channel2currentSampleRightSecondary;
     }
@@ -1442,7 +1377,7 @@ GameBoyCore.prototype.channel3OutputLevelCache = function () {
     this.channel3OutputLevelSecondaryCache();
 }
 GameBoyCore.prototype.channel3OutputLevelSecondaryCache = function () {
-    if (this.channel3Enabled && settings[14][2]) {
+    if (this.channel3Enabled && settings.userChannels[2]) {
         this.channel3currentSampleLeftSecondary = this.channel3currentSampleLeft;
         this.channel3currentSampleRightSecondary = this.channel3currentSampleRight;
     }
@@ -1467,7 +1402,7 @@ GameBoyCore.prototype.channel4OutputLevelCache = function () {
     this.channel4OutputLevelSecondaryCache();
 }
 GameBoyCore.prototype.channel4OutputLevelSecondaryCache = function () {
-    if (this.channel4Enabled && settings[14][3]) {
+    if (this.channel4Enabled && settings.userChannels[3]) {
         this.channel4currentSampleLeftSecondary = this.channel4currentSampleLeft;
         this.channel4currentSampleRightSecondary = this.channel4currentSampleRight;
     }
@@ -2167,7 +2102,7 @@ GameBoyCore.prototype.GBCtoGBModeAdjust = function () {
     cout("Stepping down from GBC mode.", 0);
     this.VRAM = this.GBCMemory = this.BGCHRCurrentBank = this.BGCHRBank2 = null;
     this.tileCache.length = 0x700;
-    if (settings[4]) {
+    if (settings.colorize) {
         this.gbBGColorizedPalette = this.getTypedArray(4, 0, "int32");
         this.gbOBJColorizedPalette = this.getTypedArray(8, 0, "int32");
         this.cachedBGPaletteConversion = this.getTypedArray(4, 0, "int32");
@@ -5237,9 +5172,6 @@ GameBoyCore.prototype.recompileBootIOWriteHandling = function () {
 //Helper Functions
 GameBoyCore.prototype.toTypedArray = function (baseArray, memtype) {
     try {
-        if (settings[5]) {
-            return baseArray;
-        }
         if (!baseArray || !baseArray.length) {
             return [];
         }
@@ -5285,9 +5217,6 @@ GameBoyCore.prototype.fromTypedArray = function (baseArray) {
 }
 GameBoyCore.prototype.getTypedArray = function (length, defaultValue, numberType) {
     try {
-        if (settings[5]) {
-            throw(new Error("Settings forced typed arrays to be disabled."));
-        }
         switch (numberType) {
             case "int8":
                 var arrayHandle = new Int8Array(length);
