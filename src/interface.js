@@ -29,7 +29,7 @@ Interface._prototype = {
     //Check to make sure the gameboy object has been created.
     initialized : function () {
         let _that = this[PRIVATE];
-        return typeof _that.gameboy === 'object' && gameboy != null;
+        return typeof _that.gameboy === 'object' && _that.gameboy != null;
     },
 
     /*
@@ -80,9 +80,9 @@ Interface.prototype = {
         let that = this;
         let _that = this[PRIVATE];
 
-        if (!_that.initialized()) {
-            return;
-        }
+        // if (!_that.initialized()) {
+        //     return false;
+        // }
 
         //TODO: autosave last state?
         _that.shutdownEmulation(); //Will shut down emulator if it's still running.
@@ -93,6 +93,8 @@ Interface.prototype = {
         _that.gameboy.start();
         _that.gameboy.stopEmulator &= 1;
         _that.gameboy.iterations = 0;
+
+        return true;
     },
 
     /*
@@ -105,21 +107,21 @@ Interface.prototype = {
     doFrame : function (partial) {
         let _that = this[PRIVATE];
         //Press required keys
-        for (let i=down.length-1; i>=0; i--) {
+        for (let i=_that.pressed.length-1; i>=0; i--) {
             if (_that.pressed[i]) {
                 _that.sendKey(i, true);
             }
         }
 
-        _that.gamebody.frameDone = false;
-        while(!gameboy.frameDone) {
-            _that.run(); //Run internal logic until the entire frame as finished.
+        _that.gameboy.frameDone = false;
+        while(!_that.gameboy.frameDone) {
+            _that.gameboy.run(); //Run internal logic until the entire frame as finished.
         }
 
         //Release all keys
-        for (let i=down.length-1; i>=0; i--) {
+        for (let i=_that.pressed.length-1; i>=0; i--) {
             _that.pressed[i] = false;
-            sendKey(i, false);
+            _that.sendKey(i, false);
         }
 
         ++_that.frames;
@@ -133,6 +135,8 @@ Interface.prototype = {
      * - you can not undo a press. Once a key is pressed it stays pressed until the end of the frame.
      */
     pressKeys : function (keys) {
+        keys = keys || [];
+
         let that = this;
         for (let i=keys.length-1; i>=0; i--) {
             that.pressKey(keys[i]);
@@ -145,7 +149,9 @@ Interface.prototype = {
      */
     pressKey : function (key) {
         let _that = this[PRIVATE];
-        if (key < _that.pressed.length && key >= 0) {
+
+        key = KEYMAP[key.toUpperCase()];
+        if (key < _that.pressed.length && key != null) {
             _that.pressed[key] = true;
         }
     },
@@ -168,7 +174,7 @@ Interface.prototype = {
     getMemory : function(start, end) {
         let _that = this[PRIVATE];
         start = Math.max(start || 0, 0);
-        end = Math.min(end || gameboy.memory.length, gameboy.memory.length);
+        end = Math.min(end || _that.gameboy.memory.length, _that.gameboy.memory.length);
         return _that.gameboy.memory.slice(start, end);
     },
 

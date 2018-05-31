@@ -1,11 +1,14 @@
-(function() { "use strict"; })();
-
-
 //In your program, this line will be - var gameboy = require('serverboy');
 var gameboy = require('../../../src/interface.js');
 
 var fs = require('fs');
 var socket = require('socket.io');
+var app = require('express')();
+var http = require('http').Server(app);
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/index.html');
+});
+
 var currentScreen;
 
 function loadROM(file_path) {
@@ -14,22 +17,24 @@ function loadROM(file_path) {
 
 	//start the rom.
 	var gameboy_instance = new gameboy();
-	gameboy_instance.loadROM(rom);
+	gameboy_instance.loadRom(rom);
 
 
 
 	var io; //Handle streaming.
-	var keysToPress; //What keys we want pressed.
+	var keysToPress = []; //What keys we want pressed.
 	var start_io = function() {
-		io = socket(process.env.PORT || process.env.NODE_PORT || 3333);
+		//io = socket(process.env.PORT || process.env.NODE_PORT || 3333);
+      io = socket(http);
 
-		io.on('connection', function(socket){
+		  io.on('connection', function(socket){
+          console.log('connection happened');
 			//Logic for handeling a new connection here.
 			//ie. registering a user or something similar.
 
 			//The new connection can send commands.
 			socket.on('keydown', function(data) {
-				var index = keysToPress.indexOf(data.key);
+				  var index = keysToPress.indexOf(data.key);
 				if(index === -1) {
 					keysToPress.push(data.key);
 				}
@@ -52,18 +57,20 @@ function loadROM(file_path) {
 	//Handle doing a single frame.
 	var frames = 0; var lastFrame = undefined; var currentFrame = undefined;
 	var emulatorLoop = function() {
+      var start = process.hrtime();
 
-		gameboy_instance.pressKeys(keysToPress);
-		currentScreen = gameboy_instance.doFrame();
-		frames++;
-		if(frames%10 === 0) { //Output every 10th frame.
-			if(io) {
-				io.emit('frame', currentScreen);
-			}
-		}
+		  gameboy_instance.pressKeys(keysToPress);
+		  currentScreen = gameboy_instance.doFrame();
+		  frames++;
+		  if(frames%20 === 0) { //Output every 10th frame.
+			    if(io) {
+				      io.emit('frame', currentScreen);
+			    }
+		  }
 
-		setImmediate(emulatorLoop); //Better asynchronous loops.
-		
+      var elapsed = process.hrtime(start)[1] / 1000000;
+		  setImmediate(emulatorLoop); //Better asynchronous loops.
+
 	};
 
 	start_io();
@@ -72,6 +79,8 @@ function loadROM(file_path) {
 
 
 console.log('starting to load rom');
-loadROM("../ROM/mario.gb");
+loadROM("/home/danshumway/Code/piglet/streaming/roms/pokemon-yellow.gbc");
 
-
+http.listen(3002, function () {
+    console.log('listening on *:3002');
+});

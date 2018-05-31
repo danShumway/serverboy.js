@@ -11,13 +11,14 @@
 
 		console.log('about to connect');
 		  //var socket = io.connect('localhost:3333'); //Server address goes here.
-          var socket = io();
-        socket.on('frame', function(data) {
-			for (var i=0; i < data.length; i++){
-                ctx_data.data[i] = data[i];
-            }
+      var socket = io();
+      socket.on('frame', function(data) {
+          console.log(data);
+          for (var i=0; i < data.length; i++){
+              ctx_data.data[i] = data[i];
+          }
 
-            ctx.putImageData(ctx_data, 0, 0);
+          ctx.putImageData(ctx_data, 0, 0);
 		});
 
 		window.onkeydown = function(e) {
