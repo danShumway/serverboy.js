@@ -18,6 +18,8 @@ var Instance = require("./instance.js");
 var settings = require("./settings.js");
 var saving = require("./saveState.js");
 
+//I need to mock a whole bunch of stuff on top of this.
+//var XAudioServer = require('./audio/XAudioServer.js');
 
 //TODO: Fix and reimplement missing function.
 function cout() { };
@@ -872,10 +874,24 @@ GameBoyCore.prototype.GyroEvent = function (x, y) {
 GameBoyCore.prototype.initSound = function () {
     this.audioResamplerFirstPassFactor = Math.max(Math.min(Math.floor(this.clocksPerSecond / 44100), Math.floor(0xFFFF / 0x1E0)), 1);
     this.downSampleInputDivider = 1 / (this.audioResamplerFirstPassFactor * 0xF0);
+
+
     if (settings[0]) {
-        this.audioHandle = new XAudioServer(2, this.clocksPerSecond / this.audioResamplerFirstPassFactor, 0, Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1, null, settings[3], function () {
-            settings[0] = false;
-        });
+        // this.audioHandle = new XAudioServer(
+        //     2,
+        //     this.clocksPerSecond / this.audioResamplerFirstPassFactor,
+        //     0,
+        //     Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1,
+        //     null,
+        //     settings[3],
+        //     function () {
+        //         settings[0] = false;
+        //     });
+
+        console.log('Initializing Audio Buffer:');
+        console.log(`Sample Rate: ${ this.clocksPerSecond / this.audioResamplerFirstPassFactor }`);
+        console.log(`Max Buffer Size: ${ Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1 }`);
+
         this.initAudioBuffer();
     }
     else if (this.audioHandle) {
@@ -957,7 +973,15 @@ GameBoyCore.prototype.intializeWhiteNoise = function () {
 }
 GameBoyCore.prototype.audioUnderrunAdjustment = function () {
     if (settings[0]) {
-        var underrunAmount = this.audioHandle.remainingBuffer();
+        //var underrunAmount = this.audioHandle.remainingBuffer();
+        var underrunAmount = null; //I don't know what this is or why it matters.
+        //From what I can tell, this is basically just "how much space do I have left in this buffer."
+        //I'm gonna need to care about that.
+        //But I'm not sure how *much* I'm going to need to care about it.
+        //If I'm working with the raw buffer, then maybe... maybe I can just change the size to fit?
+        //For now I'm going to ignore it and see what happens.
+        //I need to know what the output format of the audio is.
+
         if (typeof underrunAmount == "number") {
             underrunAmount = this.bufferContainAmount - Math.max(underrunAmount, 0);
             if (underrunAmount > 0) {
@@ -1045,7 +1069,7 @@ GameBoyCore.prototype.outputAudio = function () {
     this.audioBuffer[this.audioDestinationPosition++] = (this.downsampleInput >>> 16) * this.downSampleInputDivider - 1;
     this.audioBuffer[this.audioDestinationPosition++] = (this.downsampleInput & 0xFFFF) * this.downSampleInputDivider - 1;
     if (this.audioDestinationPosition == this.numSamplesTotal) {
-        this.audioHandle.writeAudioNoCallback(this.audioBuffer);
+        //this.audioHandle.writeAudioNoCallback(this.audioBuffer);
         this.audioDestinationPosition = 0;
     }
     this.downsampleInput = 0;

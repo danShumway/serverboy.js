@@ -173,10 +173,18 @@ Interface.prototype = {
      */
     getMemory : function(start, end) {
         let _that = this[PRIVATE];
-        start = Math.max(start || 0, 0);
-        end = Math.min(end || _that.gameboy.memory.length, _that.gameboy.memory.length);
-        return _that.gameboy.memory.slice(start, end);
+        start = Math.max(start, 0);
+        end = Math.min(end, _that.gameboy.memory.length);
+
+        return _that.gameboy.memory;
+        //return _that.gameboy.memory.slice(start, end); //Why are you doing this functionally instead of just returning the entire object?
+        //Is it for speed?
     },
+
+    getAudio : function() {
+        let _that = this[PRIVATE];
+        return _that.gameboy.audioBuffer;
+    }
 
     // DEPRECATED
     // getScreen : function () {

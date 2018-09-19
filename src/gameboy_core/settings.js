@@ -1,5 +1,5 @@
 var settings = [						//Some settings.
-	false, 								//Turn on sound.
+	  true,//false, 								//Turn on sound.
 	true,								//Boot with boot ROM first?
 	false,								//Give priority to GameBoy mode
 	1,									//Volume level set.
