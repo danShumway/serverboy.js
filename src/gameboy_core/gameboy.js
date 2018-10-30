@@ -18,6 +18,8 @@ var Instance = require("./instance.js");
 var settings = require("./settings.js");
 var saving = require("./saveState.js");
 
+//I need to mock a whole bunch of stuff on top of this.
+//var XAudioServer = require('./audio/XAudioServer.js');
 
 //TODO: Fix and reimplement missing function.
 function cout() { };
@@ -28,7 +30,7 @@ function GameBoyCore(ROMImage) {
     this.ROMImageIsString = 'string' == typeof ROMImage;
 }
 
-GameboyCore.prototype = {
+GameBoyCore.prototype = {
     constructor: GameBoyCore,
 
     //-----------------ARCHITECTURE-------------------------
@@ -38,27 +40,28 @@ GameboyCore.prototype = {
     OPCODE : require('./architecture/OPCODE.js'),
     CBOPCODE : require('./architecture/CBOPCODE.js'),
     TICKTable : require('./architecture/TICKTable.js'),
-    SecondaryTICKTable : require('./argchitecture/SecondaryTICKTable.js'),
+    SecondaryTICKTable : require('./architecture/SecondaryTICKTable.js'),
     //-------------------------------------------------------
-    //------------
-};
 
-GameBoyCore.prototype.saveSRAMState = function () {
-    if (!this.cBATT || this.MBCRam.length == 0) {
-        //No battery backup...
-        return [];
-    }
-    else {
-        //Return the MBC RAM for backup...
+
+    //------------SAVE/LOAD----------------------------------
+
+    saveState : saving.saveState,
+    saving : saving.returnFromState,
+
+    saveSRAMState : function () {
+        if (!this.cBATT || this.MBCRam.length == 0) {
+            return []; //No bettery backup...
+        }
+
         return this.fromTypedArray(this.MBCRam);
-    }
-}
-GameBoyCore.prototype.saveRTCState = function () {
-    if (!this.cTIMER) {
-        //No battery backup...
-        return [];
-    }
-    else {
+    },
+
+    saveRTCState : function () {
+        if (!this.cTIMER) {
+            return []; //No battery backup
+        }
+
         //Return the MBC RAM for backup...
         return [
             this.lastIteration,
@@ -76,10 +79,7 @@ GameBoyCore.prototype.saveRTCState = function () {
             this.RTCHALT
         ];
     }
-}
-
-GameBoyCore.prototype.saveState = saving.saveState;
-GameBoyCore.prototype.returnFromState = saving.returnFromState;
+};
 
 
 GameBoyCore.prototype.returnFromRTCState = function () {
@@ -100,12 +100,13 @@ GameBoyCore.prototype.returnFromRTCState = function () {
         this.RTCDayOverFlow = rtcData[index++];
         this.RTCHALT = rtcData[index];
     }
-}
+};
+
 GameBoyCore.prototype.start = function () {
     this.initMemory();  //Write the startup memory.
     this.ROMLoad();     //Load the ROM into memory and get cartridge information from it.
     this.initLCD();     //Initialize the graphics.
-    //this.initSound(); //Sound object initialization. Optional.
+    this.initSound(); //Sound object initialization. Optional.
     this.run();         //Start the emulation.
 }
 GameBoyCore.prototype.initMemory = function () {
@@ -824,25 +825,26 @@ GameBoyCore.prototype.initLCD = function () {
 //I think I'm just copying out framebuffer.  So maybe I dont' need to do anything?
 GameBoyCore.prototype.graphicsBlit = function () {
 
-    //var c = this.drawContextOnscreen.createImageData(160, 144);
-    //if(!this.currentScreenFixed) { this.currentScreenFixed = []; }
-    //this.lastScreen = this.currentScreenFixed;
-    //this.currentScreen = [];//new Uint8Array(this.canvasBuffer.data.length);
-    //this.partialScreen = [];
-    //for (var i=0; i < this./*canvasBuffer.data.*/frameBuffer.length; i++){
-    //    //Build partial frame.
-    //    if(this.lastScreen[i] != this.frameBuffer/*canvasBuffer.data*/[i]) {
-    //        this.partialScreen.push(i);
-    //        this.partialScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
-    //    }
-    //
-    //    //Build full frame.
-    //    this.currentScreenFixed[i] = this.frameBuffer/*canvasBuffer.data*/[i];
-    //    this.currentScreen.push(i);
-    //    this.currentScreen.push(this.frameBuffer/*canvasBuffer.data*/[i]);
+    if(!this.currentScreenFixed) { this.currentScreenFixed = []; }
+    this.lastScreen = this.currentScreenFixed;
 
-        //c.data[i] = this.canvasBuffer.data[i];
-    //}
+    this.currentScreen = [];//new Uint8Array(this.canvasBuffer.data.length);
+    this.partialScreen = [];
+
+
+    for (var i=0; i < this.canvasBuffer.data.length; i++){
+       //Build partial frame.
+       if(this.lastScreen[i] != this.canvasBuffer.data[i]) {
+           this.partialScreen.push(i);
+           this.partialScreen.push(this.canvasBuffer.data[i]);
+       }
+
+        //Build full frame.
+       this.currentScreenFixed[i] = this.canvasBuffer.data[i];
+       //this.currentScreen.push(i);
+       this.currentScreen.push(this.canvasBuffer.data[i]);
+
+    }
 };
 GameBoyCore.prototype.JoyPadEvent = function (key, down) {
     if (down) {
@@ -872,10 +874,24 @@ GameBoyCore.prototype.GyroEvent = function (x, y) {
 GameBoyCore.prototype.initSound = function () {
     this.audioResamplerFirstPassFactor = Math.max(Math.min(Math.floor(this.clocksPerSecond / 44100), Math.floor(0xFFFF / 0x1E0)), 1);
     this.downSampleInputDivider = 1 / (this.audioResamplerFirstPassFactor * 0xF0);
+
+
     if (settings[0]) {
-        this.audioHandle = new XAudioServer(2, this.clocksPerSecond / this.audioResamplerFirstPassFactor, 0, Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1, null, settings[3], function () {
-            settings[0] = false;
-        });
+        // this.audioHandle = new XAudioServer(
+        //     2,
+        //     this.clocksPerSecond / this.audioResamplerFirstPassFactor,
+        //     0,
+        //     Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1,
+        //     null,
+        //     settings[3],
+        //     function () {
+        //         settings[0] = false;
+        //     });
+
+        console.log('Initializing Audio Buffer:');
+        console.log(`Sample Rate: ${ this.clocksPerSecond / this.audioResamplerFirstPassFactor }`);
+        console.log(`Max Buffer Size: ${ Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1 }`);
+
         this.initAudioBuffer();
     }
     else if (this.audioHandle) {
@@ -957,7 +973,15 @@ GameBoyCore.prototype.intializeWhiteNoise = function () {
 }
 GameBoyCore.prototype.audioUnderrunAdjustment = function () {
     if (settings[0]) {
-        var underrunAmount = this.audioHandle.remainingBuffer();
+        //var underrunAmount = this.audioHandle.remainingBuffer();
+        var underrunAmount = null; //I don't know what this is or why it matters.
+        //From what I can tell, this is basically just "how much space do I have left in this buffer."
+        //I'm gonna need to care about that.
+        //But I'm not sure how *much* I'm going to need to care about it.
+        //If I'm working with the raw buffer, then maybe... maybe I can just change the size to fit?
+        //For now I'm going to ignore it and see what happens.
+        //I need to know what the output format of the audio is.
+
         if (typeof underrunAmount == "number") {
             underrunAmount = this.bufferContainAmount - Math.max(underrunAmount, 0);
             if (underrunAmount > 0) {
@@ -1045,7 +1069,7 @@ GameBoyCore.prototype.outputAudio = function () {
     this.audioBuffer[this.audioDestinationPosition++] = (this.downsampleInput >>> 16) * this.downSampleInputDivider - 1;
     this.audioBuffer[this.audioDestinationPosition++] = (this.downsampleInput & 0xFFFF) * this.downSampleInputDivider - 1;
     if (this.audioDestinationPosition == this.numSamplesTotal) {
-        this.audioHandle.writeAudioNoCallback(this.audioBuffer);
+        //this.audioHandle.writeAudioNoCallback(this.audioBuffer);
         this.audioDestinationPosition = 0;
     }
     this.downsampleInput = 0;
@@ -2038,7 +2062,7 @@ GameBoyCore.prototype.dispatchDraw = function () {
 //ToDo: Remove this method, I don't think it's necessary.
 //Converts rgb canvas into rgba.
 GameBoyCore.prototype.processDraw = function (frameBuffer) {
-    /*var canvasRGBALength = this.offscreenRGBCount;
+    var canvasRGBALength = this.offscreenRGBCount;
     var canvasData = this.canvasBuffer.data;
     var bufferIndex = 0;
     for (var canvasIndex = 0; canvasIndex < canvasRGBALength; ++canvasIndex) {
@@ -2047,21 +2071,21 @@ GameBoyCore.prototype.processDraw = function (frameBuffer) {
         canvasData[canvasIndex++] = frameBuffer[bufferIndex++];
     }
     this.graphicsBlit();
-    this.drewFrame = false;*/
+    this.drewFrame = false;
 };
 
 //Which means I want to grab the swizzledFrame, not the normal frameBuffer(?)
 //ToDo: I believe (but am not sure) that I can remove this too.
 GameBoyCore.prototype.swizzleFrameBuffer = function () {
     //Convert our dirty 24-bit (24-bit, with internal render flags above it) framebuffer to an 8-bit buffer with separate indices for the RGB channels:
-    /*var frameBuffer = this.frameBuffer;
+    var frameBuffer = this.frameBuffer;
     var swizzledFrame = this.swizzledFrame;
     var bufferIndex = 0;
     for (var canvasIndex = 0; canvasIndex < 69120;) {
         swizzledFrame[canvasIndex++] = (frameBuffer[bufferIndex] >> 16) & 0xFF;     //Red
         swizzledFrame[canvasIndex++] = (frameBuffer[bufferIndex] >> 8) & 0xFF;      //Green
         swizzledFrame[canvasIndex++] = frameBuffer[bufferIndex++] & 0xFF;           //Blue
-    }*/
+    }
 };
 GameBoyCore.prototype.clearFrameBuffer = function () {
     var bufferIndex = 0;
@@ -5234,6 +5258,10 @@ GameBoyCore.prototype.recompileBootIOWriteHandling = function () {
         this.memoryHighWriter[0x50] = this.memoryWriter[0xFF50] = this.cartIgnoreWrite;
     }
 }
+
+
+
+
 //Helper Functions
 GameBoyCore.prototype.toTypedArray = function (baseArray, memtype) {
     try {
@@ -5320,3 +5348,5 @@ GameBoyCore.prototype.getTypedArray = function (length, defaultValue, numberType
 }
 
 module.exports = GameBoyCore;
+
+//  LocalWords:  saveSRAMState

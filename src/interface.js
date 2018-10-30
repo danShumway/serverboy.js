@@ -1,183 +1,197 @@
 'use-strict'
-
 var GameBoyCore = require("./gameboy_core/gameboy.js");
 
+const KEYMAP = {
+    RIGHT : 0,
+    LEFT : 1,
+    UP : 2,
+    DOWN : 3,
+    A : 4,
+    B : 5,
+    SELECT : 6,
+    START : 7
+};
+
+
+const PRIVATE = '_' + process.hrtime().join('.');
 function Interface() {
-
-	//----------PRIVATE VARIABLES-----------------------------
-
-	var gameboy; //The core emulator.
-
-	//Used internally to keep track of what keys are pressed on this frame.
-	var keymap = {
-		right : 0,
-		left : 1,
-		up : 2,
-		down : 3,
-		a : 4,
-		b : 5,
-		select : 6,
-		start : 7
-	};
-
-	var down = [];
-	Object.keys(keymap).forEach(function(key) {
-		down[key] = false;
-	});
-
-	var frames = 0; //How many frames have run?
-
-	//---------------------------------------------------------
-	//----------INTERNAL METHODS-------------------------------
-
-
-	//Checks to see if the gameboy object has been created.
-	var initialized = function() {
-		return (typeof gameboy == "object" && gameboy != null);
-	};
-
-	//Checks to see if the emulator is "running", not whether or not it's playing/paused.
-	//Think of it like priming a gas tank before you start moving your car.  I guess.  Maybe.
-	//I honestly don't know if true means it's running or stopped.
-	var running = function() {
-		return ((gameboy.stopEmulator & 2) == 0);
-	};
-
-	//presses or releases a key
-	//takes a value from 1-8 and a boolean for pressed (true) or released (false)
-	var sendKey = function(keycode, down) {
-		if(initialized() && running()) {
-			if (keycode >= 0 && keycode < 8) {
-				gameboy.JoyPadEvent(keycode, down);
-			}
-		}
-	};
-
-	//stops whatever was going on.
-	var clearLastEmulation = function() {
-		if(initialized() && running()){
-			gameboy.stopEmulator |= 2;
-
-			//Reset some internal variables.
-			frames = 0;
-
-		} else {
-			//Nothing existed to be cleared.
-		}
-
-	};
-
-	//---------------------------------------------------------
-	//------------PUBLIC METHODS-------------------------------
-
-	this.loadROM = function(ROM) {
-
-		clearLastEmulation();
-		//autoSave(); //If we are about to load a new game, then save the last one.
-
-		//You can load stuff here too.
-		gameboy = new GameBoyCore(ROM);
-		gameboy.start();
-
-		//Reset some other variables and stuff.
-		if(initialized()) {
-			if (!running()) {
-				gameboy.stopEmulator &= 1;
-				//var dateObj = new Date();
-				//gameboy.firstIteration = dateObj.getTime(); Hopefully will remove these very soon, or replace them with something else.
-				gameboy.iterations = 0;
-			}
-			else {
-				console.log("The GameBoy core is already running.");
-			}
-		}
-	};
-
-	//Emulates 1 frame.
-	//Returns an array with the imageData from that frame, which can be later converted into a canvas writeable format (see documentation).
-	this.doFrame = function(partial) {
-
-		//Press the required keys.
-		for (var i = 0; i < down.length; i++) {
-			if (down[i]) {
-				sendKey(i, true);
-			}
-		}
-
-		gameboy.frameDone = false;
-		while(!gameboy.frameDone) {
-			gameboy.run(); //Go until you've finished with the frame.
-		}
-
-		//Release all the keys.
-		for (var i = 0; i < down.length; i++) {
-			down[i] = false;
-			sendKey(i, false);
-		}
-
-		frames++;
-
-		if(partial) {
-			return gameboy.partialScreen;
-		} else {
-			return gameboy.currentScreen;
-		}
-	};
-
-	//send an array with each key you want pressed.
-	//This array should be filled with strings.
-	//You can't undo a press.  Once you press a key it stays pressed until the end of the frame.
-	this.pressKeys = function(_keys){
-        var key;
-		for (key in _keys) {
-            if(_keys.hasOwnProperty(key)) {
-                this.pressKey(_keys[key]);
-            }
-		}
-	};
-
-	//Same as above, but with just one key.
-	this.pressKey = function(_key){
-		var num = keymap[_key];
-		if (num != null) {
-			down[num] = true;
-		}
-	};
-
-	//Returns an array with  all the keys.
-	//TODO: this can just return the object, frozen.
-	this.getKeys = function() {
-		toReturn = [];
-		for (var i = 0; i < keymap.length; i++) {
-			toReturn.push()
-		}
-	};
-
-	//Gets a block of memory.  You can specify a start and a stop number if you wish.
-	this.getMemory = function(start, end) {
-		var currentFrame = [];
-		start = Math.max(start || 0, 0);
-		end = Math.min(end || gameboy.memory.length, gameboy.memory.length);
-		for(var i = start; i < end; i++) {
-			currentFrame.push(gameboy.memory[i]);
-		}
-
-		return currentFrame;
-	};
-
-
-    /**
-     * ToDo: Fill out this method and figure out proper encapsulation.  What can you modify and what can't you?
-     * @returns the gameboy's current screen.
-     */
-    this.getScreen = function() {
-        return gameboy.frameBuffer;
+    let _that = this[PRIVATE] = {
+        __proto__ : Interface._prototype,
+        gameboy : null, //Core emulator
+        frames : 0, //Number of elapsed frames
+        pressed : new Array(Object.keys(KEYMAP).length), //Which keys are currently being held down
     };
-
-	//----------TODO:----------------------------------------------
-	//- Migrate over saving and loading in a more node-friendly format, possibly using fileIO
-	//- Add sound streaming support.
-
+    _that[PRIVATE] = _that;
 }
 
+Interface._prototype = {
+
+    //Check to make sure the gameboy object has been created.
+    initialized : function () {
+        let _that = this[PRIVATE];
+        return typeof _that.gameboy === 'object' && _that.gameboy != null;
+    },
+
+    /*
+     *Make sure that the emulator is "running" (note that this is different than play/pause)
+     *Think of it like turning the key in your ignition before you start driving your car
+     *TODO: does `true` mean it's running or does `true` mean it's stopped?
+     */
+    running : function () {
+       let _that = this[PRIVATE];
+       return (_that.gameboy.stopEmulator & 2) == 0;
+    },
+
+    /*
+     * Presses or releases a key
+     * - note that in the gameboy core, a key will stay pressed until it has been explicitly released.
+     * - will do nothing if the emulator is running
+     *
+     * @param keycode 1-8 number of the key to press (see Interface.KEYCODES)
+     * @param `true` to press key, `false` to release
+     */
+    sendKey : function (keycode, down) {
+        let _that = this[PRIVATE];
+        if (_that.initialized() && _that.running()) {
+            _that.gameboy.JoyPadEvent(keycode, down);
+        }
+    },
+
+    //Stop emulator, reset relevant variables
+    shutdownEmulation : function () {
+        let _that = this[PRIVATE];
+        if (_that.initialized() && _that.running()) {
+            _that.gameboy.stopEmulator |= 2;
+            _that.frames = 0; //Reset internal variables
+        }
+    }
+};
+
+Interface.prototype = {
+    constructor : Interface,
+
+    /*
+     * Load a ROM - like popping in a new cartridge
+     * - Won't do anything if the emulator hasn't been initialized.
+     *
+     * TODO: better documentation on what ROMs are and how they should be formatted.
+     */
+    loadRom : function (ROM) {
+        let that = this;
+        let _that = this[PRIVATE];
+
+        // if (!_that.initialized()) {
+        //     return false;
+        // }
+
+        //TODO: autosave last state?
+        _that.shutdownEmulation(); //Will shut down emulator if it's still running.
+
+        _that.gameboy = new GameBoyCore(ROM);
+
+        //Start emulator (some logic in here that needs to be documented)
+        _that.gameboy.start();
+        _that.gameboy.stopEmulator &= 1;
+        _that.gameboy.iterations = 0;
+
+        return true;
+    },
+
+    /*
+     * Emulates a single frame
+     *
+     * TODO: add documentation for imageData
+     * @param partial - DEPRECATED - whether or not to render the entire screen or just the changed bits
+     * @returns Array - image data for that frame, which can later be converted into a canvas writeable format
+     */
+    doFrame : function (partial) {
+        let _that = this[PRIVATE];
+        //Press required keys
+        for (let i=_that.pressed.length-1; i>=0; i--) {
+            if (_that.pressed[i]) {
+                _that.sendKey(i, true);
+            }
+        }
+
+        _that.gameboy.frameDone = false;
+        while(!_that.gameboy.frameDone) {
+            _that.gameboy.run(); //Run internal logic until the entire frame as finished.
+        }
+
+        //Release all keys
+        for (let i=_that.pressed.length-1; i>=0; i--) {
+            _that.pressed[i] = false;
+            _that.sendKey(i, false);
+        }
+
+        ++_that.frames;
+
+        return partial ? _that.gameboy.partialScreen : _that.gameboy.currentScreen;
+    },
+
+    /*
+     * Pass in an array of keys you want pressed
+     * - this array should be propogated with values from ``Interface.KEYMAP``
+     * - you can not undo a press. Once a key is pressed it stays pressed until the end of the frame.
+     */
+    pressKeys : function (keys) {
+        keys = keys || [];
+
+        let that = this;
+        for (let i=keys.length-1; i>=0; i--) {
+            that.pressKey(keys[i]);
+        }
+    },
+
+    /*
+     * Presses a key corresponding with ``Interface.KEYMAP``
+     * - you can not undo a press. Once a key is pressed it stays pressed until the end of the frame.
+     */
+    pressKey : function (key) {
+        let _that = this[PRIVATE];
+
+        key = KEYMAP[key.toUpperCase()];
+        if (key < _that.pressed.length && key != null) {
+            _that.pressed[key] = true;
+        }
+    },
+
+    /*
+     * Returns an array of all currently pressed keys
+     * - built using the enum ``Interface.KEYMAP``
+     */
+    getKeys : function () {
+        let _that = this[PRIVATE];
+        return _that.pressed.slice(0);
+    },
+
+    /*
+     * Gets a block of memory, you can specify a start and an end if you want
+     * - this is an expensive operation and should be called sparingly
+     *
+     * TODO perf test ``slice`` vs a ``for`` loop
+     */
+    getMemory : function(start, end) {
+        let _that = this[PRIVATE];
+        start = Math.max(start, 0);
+        end = Math.min(end, _that.gameboy.memory.length);
+
+        return _that.gameboy.memory;
+        //return _that.gameboy.memory.slice(start, end); //Why are you doing this functionally instead of just returning the entire object?
+        //Is it for speed?
+    },
+
+    getAudio : function() {
+        let _that = this[PRIVATE];
+        return _that.gameboy.audioBuffer;
+    }
+
+    // DEPRECATED
+    // getScreen : function () {
+    //    let _that = this[PRIVATE];
+    //    return _that.gameboy.frameBuffer;
+    // }
+};
+
+Interface.KEYMAP = KEYMAP;
 module.exports = Interface;

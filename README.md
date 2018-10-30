@@ -1,12 +1,35 @@
-serverboy.js
-============
+# Serverboy
 
-Pure nodeJS gameboy emulator with hooks for scripting and streaming output, adapted from both https://github.com/grantgalitz/GameBoy-Online and https://github.com/guille/gameboy to remove canvas requirements and allow the emulator to run in a pure NodeJS environment with no additional dependencies of any kind.
+Serverboy is a pure NodeJS headless Gameboy emulator with hooks for scripting
+and streaming output, adapted for use by Piglet.
 
-Specifically, Serverboy has been adapted to be more scriptable and autimated; the core is capapble of emulating on a frame-by-frame basis, rather than starting at a given speed and running continuously, having input passed in on a frame-by-frame basis (for scripting or capturing user input from a remote client), and for outputing memory (for analyzing the state of the game at any given moment).
+Serverboy has no dependencies, including browser-side dependencies like Canvas.
+This makes Serverboy ideal for headless streaming and scripting via low-powered
+environments and environments where users are not able to install additional
+software dependencies like [Cairo](https://www.cairographics.org/).
 
-Serverboy is in very alpha stages, and likely is not production ready for your needs. It is being maintained and developed primarily to be used in conjunction with https://github.com/danShumway/Piglet, a Lua based AI that attempts to "solve" gameboy and gameboy color games using machine learning techniques, however, I will be maintaining and updating the module to the best of my ability as Piglet evolves until it is a mature, versitile emulator that can be adapted for a variety of situations.
+Unlike most emulators, Serverboy's API is heavily geared towards automation and
+serverside projects. Serverboy doesn't auto-advance frames, so you can step
+forward frame by frame after running asynchronous logic. Serverboy also provides
+hooks for getting raw memory access, raw screen pixels, and raw PCM audio data.
 
-At this stage in development, it is likely that the project still has bugs or quirks.  In specific, I have not ported over any of the sound code or done extensive testing. 
+This focus on automation means that Serverboy is *not* generally suited for
+regular play. There's no integrated code for displaying the screen or playing
+audio. It's designed to be used *inside*** other more experimental projects. If
+you just want a way to play games, look elsewhere unless you're willing to build
+your own front-end.
 
-An example file is available in examples/streaming that shows how the emulator could take in input and stream output to a remote canvas.  In the future, this README will be updated with more extensive documentation.
+**Serverboy is alpha software; elements like sound are still a work in progress.**
+
+# Credits
+
+Serverboy is heavily based on work by
+[rauchg](https://github.com/rauchg/gameboy), which is itself heavily based on
+Grant Galitz's earlier work with [Gameboy
+Online](https://github.com/taisel/GameBoy-Online). Most of this code originated
+in Grant's repo, and I've mostly been playing janitor since.
+
+Imran Nazar's article series, [Gameboy Emulation in
+Javascript]http://imrannazar.com/GameBoy-Emulation-in-JavaScript:-The-CPU was
+also an occasional help when I wanted dig into the internals of how the hardware
+actually worked to help with refactoring.
