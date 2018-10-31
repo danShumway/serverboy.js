@@ -1,5 +1,13 @@
 # Serverboy
 
+<div align="center">
+    <!--Get everything working on NPM and add a badge for that-->
+    <!--Add a locally generated testing pipeline badge that points to some kind of text file-->
+    <!--Basically, copy Distilled's setup-->
+    <!--TODO: cache this specific badge locally, you shouldn't rely on 3rd-parties unless it's necessary.-->
+    <a href="https://opensource.org/licenses/GPL-2.0"><img alt="GPL Licensed" src="https://badges.frapsoft.com/os/gpl/gpl.png?v=103"/></a>
+</div>
+
 Serverboy is a pure NodeJS headless Gameboy emulator with hooks for scripting
 and streaming output, adapted for use by Piglet.
 
