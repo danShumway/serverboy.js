@@ -14,10 +14,26 @@ function rel (relpath) {
 var Gameboy = require(rel('./src/interface.js'));
 
 var tests = {
-    cpu: {
+    instr_timing: {
+        file: './roms/blargg_tests/instr_timing.gb',
+        duration: 260
+    },
+    cpu_instrs: {
         file: './roms/blargg_tests/cpu_instrs.gb',
         duration: 4200
     },
+    interrupt_time: {
+        file: './roms/blargg_tests/interrupt_time.gb',
+        duration: 260
+    },
+    mem_timing: {
+        file: './roms/blargg_tests/mem_timing.gb',
+        duration: 625
+    },
+    oam_bug: {
+        file: './roms/blargg_tests/oam_bug.gb',
+        duration: 1875
+    }
 
     //---------NEW TEST ROMS HERE-------------
 };
