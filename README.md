@@ -15,11 +15,20 @@ hooks for getting raw memory access, raw screen pixels, and raw PCM audio data.
 
 This focus on automation means that Serverboy is *not* generally suited for
 regular play. There's no integrated code for displaying the screen or playing
-audio. It's designed to be used *inside*** other more experimental projects. If
+audio. It's designed to be used *inside* other more experimental projects. If
 you just want a way to play games, look elsewhere unless you're willing to build
 your own front-end.
 
 **Serverboy is alpha software; elements like sound are still a work in progress.**
+
+# Integration Tests
+
+Serverboy uses [Blargg's Test Roms](https://github.com/retrio/gb-test-roms) for
+integration tests to assure emulation accuracy.
+
+<div align="center">
+    <img alt="cpu" src="./tests/results/cpu.png" width=320 />
+</div>
 
 # Credits
 

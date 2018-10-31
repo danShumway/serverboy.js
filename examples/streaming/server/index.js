@@ -72,6 +72,8 @@ function loadROM(file_path) {
 		    frames++;
 		    if(frames%10 === 0) { //Output every 10th frame.
 			      if(io) {
+                console.log(frames);
+
 				        io.emit('frame', currentScreen);
                 io.emit('memory', gameboy_instance.getMemory());
                 io.emit('audio', audioLoop);
@@ -90,7 +92,7 @@ function loadROM(file_path) {
 
 
 console.log('starting to load rom');
-loadROM("/home/danshumway/Code/piglet/streaming/roms/pokemon-yellow.gbc");
+loadROM("roms/blargg_tests/cpu_instrs.gb");
 
 http.listen(3002, function () {
     console.log('listening on *:3002');
