@@ -165,6 +165,11 @@ Interface.prototype = {
         return _that.pressed.slice(0);
     },
 
+    getScreen : function () {
+        var _that = this[PRIVATE];
+        return _that.gameboy.currentScreen;
+    },
+
     /*
      * Gets a block of memory, you can specify a start and an end if you want
      * - this is an expensive operation and should be called sparingly
@@ -185,12 +190,6 @@ Interface.prototype = {
         let _that = this[PRIVATE];
         return _that.gameboy.audioBuffer;
     }
-
-    // DEPRECATED
-    // getScreen : function () {
-    //    let _that = this[PRIVATE];
-    //    return _that.gameboy.frameBuffer;
-    // }
 };
 
 Interface.KEYMAP = KEYMAP;
