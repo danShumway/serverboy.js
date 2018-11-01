@@ -27,7 +27,30 @@ audio. It's designed to be used *inside* other more experimental projects. If
 you just want a way to play games, look elsewhere unless you're willing to build
 your own front-end.
 
-**Serverboy is alpha software; elements like sound are still a work in progress.**
+**Serverboy is alpha software; elements like sound are still a work in progress.
+The API may change over time.**
+
+# Usage
+
+The full API is available in the [docs](./docs/api.md).
+
+```js
+var gameboy = new Gameboy();
+var rom = fs.readFileSync(file_path);
+
+gameboy.loadRom(rom);
+
+setTimeout(function () {
+
+   //Whatever custom logic you need
+   var memory = gameboy.getMemory();
+   if (memory[3000] === 0) {
+       gameboy.pressKeys([Gameboy.KEYMAP.RIGHT]);
+   }
+   
+   gameboy.doFrame();
+}, 0);
+```
 
 # Integration Tests
 

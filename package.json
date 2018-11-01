@@ -1,10 +1,11 @@
 {
   "name": "serverboy",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A gameboy emulator based off of gameboy-online and optimized to run on a server with hooks for scripting and streaming output.",
   "main": "./src/interface.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node ./tests/runner.js",
+    "test_generate": "node ./tests/runner.js -- generate",
     "start": "node ./src/interface.js"
   },
   "keywords": [
