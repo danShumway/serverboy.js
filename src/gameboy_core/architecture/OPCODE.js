@@ -116,12 +116,12 @@ var OPCODE = [
 		if (parentObj.cGBC) {
 			if ((parentObj.memory[0xFF4D] & 0x01) == 0x01) {		//Speed change requested.
 				if (parentObj.memory[0xFF4D] > 0x7F) {				//Go back to single speed mode.
-					console.log("Going into single clock speed mode.", 0);
+					// console.log("Going into single clock speed mode.", 0);
 					parentObj.doubleSpeedShifter = 0;
 					parentObj.memory[0xFF4D] &= 0x7F;				//Clear the double speed mode flag.
 				}
 				else {												//Go to double speed mode.
-					console.log("Going into double clock speed mode.", 0);
+					// console.log("Going into double clock speed mode.", 0);
 					parentObj.doubleSpeedShifter = 1;
 					parentObj.memory[0xFF4D] |= 0x80;				//Set the double speed mode flag.
 				}
