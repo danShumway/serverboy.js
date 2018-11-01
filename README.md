@@ -3,8 +3,8 @@
 <div align="center">
     <a href="https://nodei.co/npm/serverboy/"><img alt="npm stats" src="https://nodei.co/npm/serverboy.png?compact=true" /></a>
     <br>
-    <!--TODO: cache this specific badge locally, you shouldn't rely on 3rd-parties unless it's necessary.-->
-    <a href="./tests/results/testreport.txt"><img alt="Test Report" src="https://img.shields.io/badge/test%20report-available-green.svg" /></a>
+    <!--There should be a better way to run your tests. The problem is that they're likely to be really slow on Gitlab.-->
+    <a href="https://gitlab.com/piglet-plays/serverboy.js/tree/master/tests/results/test_report.txt"><img alt="Test Report" src="https://img.shields.io/badge/test%20report-available-green.svg" /></a>
     <a href="https://opensource.org/licenses/GPL-2.0"><img alt="GPL Licensed" src="https://badges.frapsoft.com/os/gpl/gpl.png?v=103"/></a>
     <a href="https://badge.fury.io/js/serverboy"><img alt="npm version" src="https://badge.fury.io/js/serverboy.svg" /></a>
 </div>

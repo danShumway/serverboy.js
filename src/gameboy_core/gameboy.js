@@ -445,8 +445,9 @@ GameBoyCore.prototype.interpretCartridge = function () {
     }
 
 
-    console.log("Game Title: " + this.name + "[" + this.gameCode + "][" + this.ROMImage[0x143] + "]");
-    //console.log("Game Code: " + this.gameCode);
+    // You don't want extra output, do you?
+    // console.log("Game Title: " + this.name + "[" + this.gameCode + "][" + this.ROMImage[0x143] + "]");
+
     // Cartridge type
     this.cartridgeType = this.ROM[0x147];
     //console.log("Cartridge type #" + this.cartridgeType);
@@ -761,65 +762,39 @@ GameBoyCore.prototype.initLCD = function () {
         //Resizer not needed:
         this.resizer = null;
     }
-    //try {
-        /*this.canvasOffscreen = document.createElement("canvas");
-        this.canvasOffscreen.width = this.offscreenWidth;
-        this.canvasOffscreen.height = this.offscreenHeight;
-        this.drawContextOffscreen = this.canvasOffscreen.getContext("2d");
-        this.drawContextOnscreen = this.canvas.getContext("2d");
-        this.canvas.setAttribute("style", (this.canvas.getAttribute("style") || "") + "; image-rendering: " + ((settings[13]) ? "auto" : "-webkit-optimize-contrast") + ";" +
-        "image-rendering: " + ((settings[13]) ? "optimizeQuality" : "-o-crisp-edges") + ";" +
-        "image-rendering: " + ((settings[13]) ? "optimizeQuality" : "-moz-crisp-edges") + ";" +
-        "-ms-interpolation-mode: " + ((settings[13]) ? "bicubic" : "nearest-neighbor") + ";");
-        this.drawContextOffscreen.webkitImageSmoothingEnabled  = settings[13];
-        this.drawContextOffscreen.mozImageSmoothingEnabled = settings[13];
-        this.drawContextOnscreen.webkitImageSmoothingEnabled  = settings[13];
-        this.drawContextOnscreen.mozImageSmoothingEnabled = settings[13];
-        //Get a CanvasPixelArray buffer:*/
 
-        //console.log('starting up canvas hack');
-        try {
+    try {
+        this.canvasBuffer = {
+            "data": new Uint8ClampedArray(92160),
+            "height": 144,
+            "width": 160
+        };
 
-
-            this.canvasBuffer = {
-                "data": new Uint8ClampedArray(92160),
-                "height": 144,
-                "width": 160
-            }
-
-            //this.canvasBuffer = this.drawContextOffScreen.createImageData(144, 160);
-
+        //Taking canvas out of the picture.
+        //this.canvasBuffer = this.drawContextOffScreen.createImageData(144, 160);
             //this.canvasBuffer.prototype = ImageData;
-
-
             //new ImageData(160, 144);//{'width':160, 'height':144, 'data':new Array(160*144*4)};//this.drawContextOffscreen.createImageData(this.offscreenWidth, this.offscreenHeight);
-            console.log('trying to take canvas out of the picture.');
-        }
-        catch (error) {
-            console.log('hack failed: ' + error.message + ': falling back to getImageData initialization');
-            //cout("Falling back to the getImageData initialization (Error \"" + error.message + "\").", 1);
-            //this.canvasBuffer = this.drawContextOffscreen.getImageData(0, 0, this.offscreenWidth, this.offscreenHeight);
-        }
-        var index = this.offscreenRGBCount;
-        while (index > 0) {
-            this.canvasBuffer.data[index -= 4] = 0xF8;
-            this.canvasBuffer.data[index + 1] = 0xF8;
-            this.canvasBuffer.data[index + 2] = 0xF8;
-            this.canvasBuffer.data[index + 3] = 0xFF;
-        }
-        //this.graphicsBlit();
-        if (this.swizzledFrame == null) {
-            this.swizzledFrame = this.getTypedArray(69120, 0xFF, "uint8");
-        }
+    }
+    catch (error) {
+        console.log('hack failed: ' + error.message + ': falling back to getImageData initialization');
+        //cout("Falling back to the getImageData initialization (Error \"" + error.message + "\").", 1);
+        //this.canvasBuffer = this.drawContextOffscreen.getImageData(0, 0, this.offscreenWidth, this.offscreenHeight);
+    }
+    var index = this.offscreenRGBCount;
+    while (index > 0) {
+        this.canvasBuffer.data[index -= 4] = 0xF8;
+        this.canvasBuffer.data[index + 1] = 0xF8;
+        this.canvasBuffer.data[index + 2] = 0xF8;
+        this.canvasBuffer.data[index + 3] = 0xFF;
+    }
+    //this.graphicsBlit();
+    if (this.swizzledFrame == null) {
+        this.swizzledFrame = this.getTypedArray(69120, 0xFF, "uint8");
+    }
 
-        console.log('about to draw');
-        //Test the draw system and browser vblank latching:
-        this.drewFrame = true;                                      //Copy the latest graphics to buffer.
-        this.requestDraw();
-    //}
-    /*catch (error) {
-        throw(new Error("HTML5 Canvas support required: " + error.message + "file: " + error.fileName + ", line: " + error.lineNumber));
-    }*/
+    //Test the draw system and browser vblank latching:
+    this.drewFrame = true; //Copy the latest graphics to buffer.
+    this.requestDraw();
 };
 
 //I think I'm just copying out framebuffer.  So maybe I dont' need to do anything?
@@ -888,9 +863,9 @@ GameBoyCore.prototype.initSound = function () {
         //         settings[0] = false;
         //     });
 
-        console.log('Initializing Audio Buffer:');
-        console.log(`Sample Rate: ${ this.clocksPerSecond / this.audioResamplerFirstPassFactor }`);
-        console.log(`Max Buffer Size: ${ Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1 }`);
+        // console.log('Initializing Audio Buffer:');
+        // console.log(`Sample Rate: ${ this.clocksPerSecond / this.audioResamplerFirstPassFactor }`);
+        // console.log(`Max Buffer Size: ${ Math.max(this.baseCPUCyclesPerIteration * settings[8] / this.audioResamplerFirstPassFactor, 8192) << 1 }`);
 
         this.initAudioBuffer();
     }
